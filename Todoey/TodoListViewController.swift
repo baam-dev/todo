@@ -10,11 +10,16 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
     
-    var itemArray = ["Tyska1", "Dari1", "PRO1"]
+    var itemArray = ["Apples", "Oranges", "Strawberries"]
+    
+    let defaults = UserDefaults.standard
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
+            itemArray = items
+        }
     }
     
 
@@ -44,7 +49,6 @@ class TodoListViewController: UITableViewController {
         else {
             tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
         }
-        
     }
     
 //    MARK: - Add New Items
@@ -54,24 +58,27 @@ class TodoListViewController: UITableViewController {
             // init an empty UITextField
             var alertTextFieldInput = UITextField()
     
-            let alert = UIAlertController(title: "Add New Course", message: "", preferredStyle: .alert)
+            let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
             let cancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
             let action = UIAlertAction(title: "Add Item", style: .default) { action in
+                
                 // what will happen once user clicks the add btn
-    
-                self.itemArray.append(alertTextFieldInput.text!)
-                self.tableView.reloadData()
-    
+                // if there is no text, do not run
+                if alertTextFieldInput.text != "" {
+                    self.itemArray.append(alertTextFieldInput.text!)
+                    
+                    self.defaults.setValue(self.itemArray, forKey: "TodoListArray")
+                    self.tableView.reloadData()
+                }
             }
-    
             alert.addTextField { alertTextField in
-                alertTextField.placeholder = "e.g. Math 2"
-                alertTextFieldInput = alertTextField
+                alertTextField.placeholder = "e.g. Egg"
+                alertTextField.autocapitalizationType = .words
+                    alertTextFieldInput = alertTextField
             }
-            // 1. create alert
-            // 2. create action
-            // 3. add the action to alert
-            // 4. present the alert (includes the action)
+            
+            
+            
             alert.addAction(action)
             alert.addAction(cancel)
             present(alert, animated: true, completion: nil)

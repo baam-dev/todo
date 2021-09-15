@@ -10,18 +10,14 @@ import UIKit
 
 class TodoListViewController: UITableViewController {
     
-    var itemArray = ["Apples", "Oranges", "Strawberries"]
-    
-    let defaults = UserDefaults.standard
+    var itemArray = [Item]()
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
-            itemArray = items
-        }
+        loadItems()
     }
-    
 
     //MARK: - TableViewDataSource Methods
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
@@ -30,8 +26,10 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ToDoItemCell", for: indexPath)
-        cell.textLabel?.text = itemArray[indexPath.row]
         
+        let item = itemArray[indexPath.row]
+        cell.textLabel?.text = item.title
+        cell.accessoryType = item.done == true ? .checkmark : .none
         return cell
     }
     
@@ -39,18 +37,11 @@ class TodoListViewController: UITableViewController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        //        print(itemArray[indexPath.row])
         tableView.deselectRow(at: indexPath, animated: true)
         
-        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-            
-            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-        }
-        else {
-            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-        }
+        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
+        saveItems()
     }
-    
 //    MARK: - Add New Items
     
         @IBAction func addPressed(_ sender: UIBarButtonItem) {
@@ -60,15 +51,16 @@ class TodoListViewController: UITableViewController {
     
             let alert = UIAlertController(title: "Add New Item", message: "", preferredStyle: .alert)
             let cancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
-            let action = UIAlertAction(title: "Add Item", style: .default) { action in
+            let action = UIAlertAction(title: "Add Item", style: .default) { [self] action in
                 
                 // what will happen once user clicks the add btn
                 // if there is no text, do not run
                 if alertTextFieldInput.text != "" {
-                    self.itemArray.append(alertTextFieldInput.text!)
+                    let newItem = Item()
+                    newItem.title = alertTextFieldInput.text!
                     
-                    self.defaults.setValue(self.itemArray, forKey: "TodoListArray")
-                    self.tableView.reloadData()
+                    self.itemArray.append(newItem)
+                    saveItems()
                 }
             }
             alert.addTextField { alertTextField in
@@ -77,14 +69,34 @@ class TodoListViewController: UITableViewController {
                     alertTextFieldInput = alertTextField
             }
             
-            
-            
             alert.addAction(action)
             alert.addAction(cancel)
             present(alert, animated: true, completion: nil)
         }
     
-
+    func saveItems() {
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+            
+        } catch {
+            print("Error encoding items \(error)")
+        }
+        self.tableView.reloadData()
+    }
+    
+    func loadItems() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            }
+            catch {
+                print(error)
+            }
+        }
+    }
     
 }
 
